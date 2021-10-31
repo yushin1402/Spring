@@ -1,0 +1,176 @@
+・URL
+http://terasolunaorg.github.io/guideline/5.5.1.RELEASE/ja/Tutorial/TutorialTodo.html#id4
+
+
+①プロジェクトの作成
+mvn archetype:generateを利用して実装するインフラストラクチャ層向けのブランクプロジェクトを作成うる。
+※インフラストラクチャ層のアーキタイプ:
+	- java.util.Mapを利用したインメモリ実装のRepositoryImple
+	- MyBatis3を使用してデータベースアクセスするRepositoryImple
+	- Spring Data JPAを使用してデータベースにアクセスするRepositoryImple
+
+一旦、java.util.Mapを利用したブランクプロジェクトを作成する。
+
+【MVNコマンド】
+mvn archetype:generate -B\
+ -DarchetypeGroupId=org.terasoluna.gfw.blank\
+ -DarchetypeArtifactId=terasoluna-gfw-web-blank-archetype\
+ -DarchetypeVersion=5.5.1.RELEASE\
+ -DgroupId=com.example.todo\
+ -DartifactId=todo\
+ -Dversion=1.0.0-SNAPSHOT
+
+ここでは、C:\study\spring\terasolunaチュートリアル上でGit Bashを立ち上げ、上記コマンドを実行した。
+
+②プロジェクトのインポート: 
+	- 作成したブランクプロジェクトをSTSへインポートする。
+	  [File] -> [インポート] -> [Maven] -> [既存Mavenプロジェクト] -> [次へ]
+	- ルートディレクトリに作成したブランクプロジェクトを設定し完了する。
+	  C:\study\spring\terasolunaチュートリアル\todo
+	- パッケージエクスプローラーにtodoプロジェクトがインポートされたことを確認する。
+
+③プロジェクトの動作確認:
+	トップページを表示:
+		Controller:
+			package com.example.todo.app.welcome;
+
+				import java.text.DateFormat;
+				import java.util.Date;
+				import java.util.Locale;
+
+				import org.slf4j.Logger;
+				import org.slf4j.LoggerFactory;
+				import org.springframework.stereotype.Controller;
+				import org.springframework.ui.Model;
+				import org.springframework.web.bind.annotation.RequestMapping;
+				import org.springframework.web.bind.annotation.RequestMethod;
+
+				/**
+				 * Handles requests for the application home page.
+				 */
+				/* SpringBoot起動時にDIコンテナにインスタンスが登録される。＠Autowireの呼び出し元クラスにインスタンスを代入出来る */
+				@Controller
+				public class HelloController {
+				/* praivate finalとしているのはこのクラスからしかこの変数にアクセスを許さないから。staticをつけるとクラスに対して1つしか変数を持たない。(複数インスタンスを作成する場合、変数の値を共有する。) 
+				   このクラスはクライアントアクセスを受け付ける、コントロールするものであるため、アクセスを受け付けるために新しいインスタンスが作成される。この際、LoggreFactoryを共有することで
+				   メモリの節約になる？(そもそもこうしないとログが統一されない？)*/
+				/*LoggerFactory.getLogger(HelloController.class)でHelloController.classがロガー名のロガーを取得している。ロガーは文字どおり、ログを出力するコンポーネント。別にあるLogBackの設定ファイルはロガーごとに
+				  定義可能で、コンソール出力か、ファイルパス出力か、メッセージ形式をどうするかなどを設定出来る。*/
+				    private static final Logger logger = LoggerFactory
+				            .getLogger(HelloController.class);
+
+				    /**
+				     * Simply selects the home view to render by returning its name.
+				     */
+     				/*@RequestMappingはSpringbootのアノテーションで、これが定義されたメソッドで、リクエストを処理する。この例では、ドキュメントルート(/)へのGETとPOSTをhomeメソッドで処理する記述となっている。*/
+				    @RequestMapping(value = "/", method = {RequestMethod.GET, RequestMethod.POST})
+				    public String home(Locale locale, Model model) {
+     				/*HelloController.classロガーの設定に従ってinfroログ出力*/
+				        logger.info("Welcome home! The client locale is {}.", locale);
+     				/*現在時刻を持つインスタンスを生成*/
+				        Date date = new Date();
+       				/*Dateformatはクラスなので、Dateformat型変数を作って、getDateTimeInstanceで取得したDateformat型インスタンスを代入している。DateFormat.LONGはインスタンスではなく値。
+       				  public static final DateFormat getDateTimeInstance(int dStyle, int tStyle [,Locale loc]) dstyle:日付スタイル tstyle:時刻スタイル* 最後はロケール*/
+				        DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.LONG,
+				                DateFormat.LONG, locale);
+					/*getDateTimeInstanceインスタンスに現在時刻を渡してフォーマットして変数に格納*/
+				        String formattedDate = dateFormat.format(date);
+					/*modelはspringMVCのモデル実装。servertime属性にgetDateTimeInstanceフォーマットのタイムスタンプを格納しておくと、view側のhtml、jspなど(今回はWEB-INF/views/welcome/home.jsp、ViewResolverで設定されているらしい)からservertimeを介して呼び出すことが出来る。*/
+				        model.addAttribute("serverTime", formattedDate);
+					/*home.htmlを返却する。*/
+				        return "welcome/home";
+				    }
+
+				}
+
+	アプリケーション実行:
+		- チュートリアルのSTSとのバージョン差異でチュートリアル通りには出来ない？
+		  Tomcatを追加して、動かす設定をしてみる。(DockerとかKubernetesとも連携できるらしいから今度調べる)
+		- ウィンドウ→設定→サーバー→ランタイム環境→追加→Apache Tomcat v10.0(新規ローカルサーバの作成にチェック)→次へ→
+		  インストールディレクトリをCドライブ直下に指定→ダウンロードしてインストール→同意して完了→完了→適用して閉じる
+		- C:\apache-tomcat-10.0.10にtomcat10がインストールされたことを確認する。
+		- プロジェクトで右クリック→実行→実行構成→ApacheTomcat→名前をtudo-tutoにして適用→実行
+		- エラー発生。「メイン・クラスorg.apache.catalina.startup.Bootstrapを検出およびロードできませんでした」とのこと。
+		- Eclipse Tomcat Pluginが必要らしい。ヘルプ→Eclipseマーケットプレイス→Eclipse Java EE 開発者ツールで検索→Eclipse Enterprise Java and Web Developer tools 3.23をインストール
+		  →全部チェックつけて確認→同意しますで完了→右したのソフトウェアのインストール中が100%になるまで待ち→今すぐ再起動
+		- 実行をリトライ→tomcatは起動出来たけど404エラー。warをビルドしてからtomcatを再起動することにするも、mavenのビルドエラー
+		- Failed to execute goal org.apache.maven.plugins:maven-war-plugin:3.0.0:war (default-war) on project helloworld: Execution default-war of goal org.apache.maven.plugins:maven-war-plugin:3.0.0:war failed: Unable to load the mojo 'war' in the plugin 'org.apache.maven.plugins:maven-war-plugin:3.0.0' due to an API incompatibility: org.codehaus.plexus.component.repository.exception.ComponentLookupException
+		- warのビルドプラグインがjavaやmavenに対して古すぎるっぽい。pom.xmlを修正(STSが死ぬほど使いにくいのだが。。。)
+		- 3.3.2にしてみる
+		  https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-war-plugin
+		- 実行からMaven Clead → Maven ビルドでビルドは今後は成功
+		- エラー解消されない。。。アプリケーションが起動出来ない
+		- java.lang.NoClassDefFoundError: javax/servlet/ServletContextListener 
+		- pom.xml上はtomcat9が設定されていたので、tomcat9をインストール(追加)してリトライ
+		- 成功！tomcatとpom.xmlの非互換が原因だったよう。実行構成でtodoアプリは常にtomcat9で起動するように設定
+		- なんかログがいっぱい出た
+		    date:2021-10-25 00:39:06	thread:main	X-Track:	level:INFO 	logger:o.springframework.web.servlet.DispatcherServlet 	message:Initializing Servlet 'appServlet'
+			date:2021-10-25 00:39:08	thread:main	X-Track:	level:INFO 	logger:o.springframework.web.servlet.DispatcherServlet 	message:Completed initialization in 2526 ms
+			10月 25, 2021 12:39:08 午前 org.apache.coyote.AbstractProtocol start
+			情報: プロトコルハンドラー ["http-nio-8080"] を開始しました。
+			10月 25, 2021 12:39:08 午前 org.apache.catalina.startup.Catalina start
+			情報: サーバーの起動 [10754]ms
+		    date:2021-10-25 00:39:09	thread:http-nio-8080-exec-2	X-Track:8989b4f114a4476c9d6bec879f6d2f98	level:TRACE	logger:o.t.gfw.web.logging.TraceLoggingInterceptor     	message:[START CONTROLLER] HelloController.home(Locale,Model)
+		    date:2021-10-25 00:39:09	thread:http-nio-8080-exec-2	X-Track:8989b4f114a4476c9d6bec879f6d2f98	level:INFO 	logger:com.example.todo.app.welcome.HelloController    	message:Welcome home! The client locale is ja_JP.
+			#コメント 上記がHelloContorller.javaのLogger.infoで出力したログ。端末のロケール情報がhomeメソッドの第一引数に設定された。なんで？
+			 → Spring MVCの仕組みらしい。コントローラ内のメソッドはコントローラメソッドと呼ばれて、このメソッドの引数に特定のクラスを指定すると画面入力されたもの以外の様々な情報をHTTPリクエストから拾ってくれるらしい。
+			    Spirng内の処理(org.springframework.web.servlet.mvc.method.annotation.ServletRequestMethodArgumentResolverとorg.springframework.web.servlet.mvc.method.annotation.ServletResponseMethodArgumentResolver)で下記の引数にリクエスト情報から生成したオブジェクトをバインドしているとのこと。
+			    	org.springframework.web.context.request.WebRequest
+					org.springframework.http.HttpMethod
+					javax.servlet.ServletRequest
+					javax.servlet.ServletResponse
+					org.springframework.web.multipart.MultipartRequest
+					javax.servlet.http.HttpSession
+					java.security.Principal
+					java.util.Locale
+					java.util.TimeZone
+					java.time.ZoneId
+					java.io.InputStream
+					java.io.OutputStream
+					java.io.Reader
+					java.io.Writer
+		    date:2021-10-25 00:39:09	thread:http-nio-8080-exec-2	X-Track:8989b4f114a4476c9d6bec879f6d2f98	level:TRACE	logger:o.t.gfw.web.logging.TraceLoggingInterceptor     	message:[END CONTROLLER  ] HelloController.home(Locale,Model)-> view=welcome/home, model={serverTime=2021年10月25日 0:39:09 JST}
+		    date:2021-10-25 00:39:09	thread:http-nio-8080-exec-2	X-Track:8989b4f114a4476c9d6bec879f6d2f98	level:TRACE	logger:o.t.gfw.web.logging.TraceLoggingInterceptor     	message:[HANDLING TIME   ] HelloController.home(Locale,Model)-> 106,205,100 ns
+
+④Todoアプリケーションの作成:
+	Domain層の作成:
+		Domain Objectの作成:
+			ドメイン層とは: ビジネスロジックを動作させる層。ドメインとはビジネスロジックの分割単位のこと。
+							modelとrepositoryとserviceに分かれる
+			mode:
+				インターフェースする変数をまとめたオブジェクト。プライベートメンバーとそのメンバーに対するアクセスを行うメソッドを用意しておく。
+			repository:
+				データベースアクセスを実現するためのメソッドを用意しておく。MyBatisを利用する場合はオブジェクトとDBリポジトリのマッピングを定義しておくし、H2などのインメモリ型DB
+				を使っている場合は単にCRUD操作を行うメソッドを用意しておけばOK。インターフェース型で定義しておいて、service側でインプリメントする(はず)
+				チュートリアルではtodo型のオブジェクト(modelで定義したクラスから生成)を引数にして対象todoを作ったり削除したり検索したりするメソッドを定義している。
+			RepositoryImple:
+				- repositoryで作成したインターフェースをインプリメントして実際のCRUD操作を実装する。
+				  チュートリアルでは、ConcurrentHashMapインスタンス(StirngとTodoオブジェクトを紐づけたマップ)を作成し、このインスタンスに対してデータを突っ込んだり、削除したりする操作を記述してる。
+				- Optional<Todo>は、nulllかもしれない値を取り扱うのに便利なオブジェクトらしい。これを使うことで自前でnullかどうかのチェックを実装しないですむ。
+				  チュートリアルではTODO_MAP.get(TodoId)をOptionalオブジェクトに格納してリターンしている。findByIdで存在しないIDを検索された場合も例外を投げずにnullを取り扱うため(のはず)
+				- Collection<Todo>はデータを表現するためにJavaが用意している便利なクラスらしい。Collectionはインターフェースなので、単独でインスタンスを生成することはできず
+				  例えば、下記のデータ構造を取り扱うメソッドをCollection型として実装する形で利用する。
+				  java.util.List	順序付きリストのインターフェース
+				  java.util.ArrayList	配列を用いたjava.util.Listの実装
+				  java.util.LinkedList	リンクリストを用いたjava.util.Listの実装
+				  java.util.Set	重複を許さない集合のインターフェース
+				  java.util.HashSet	ハッシュを用いたjava.util.Setの実装
+				  java.util.TreeSet	二分探索木を用いたjava.util.Setの実装
+				  上記のどれを実装したとしても、実装したデータ構造に対して、Collectionのadd、remove、contains、size、isEmptyなどのメソッドを適用出来るところが便利ポイント
+				  確かにこれは修正に強いプログラムになる気がする(そもそものインターフェース型の強味？)
+				  チュートリアルでは、TODO_MAP.values()の結果をCollectionオブジェクトに格納してリターンしているので、これで、ConcurrentHashMapに格納された全値のリストに上記のメソッドでアクセス出来る。
+				  なお、この値の一覧は当たり前だがメソッドの仕様でCollection型で返されるので、単純にリターン出来ているっぽい。
+			service:
+				- 業務ロジックを記述するインターフェースを作成する。チュートリアルでは、todoの作成、削除、全件表示、完了の4つを定義。この後これらの具体的な処理を実装する。
+			ServiceImple
+				- serviceで定義したインターフェースを利用して具体的なメソッドを実装する。todoの作成、削除、全件表示、完了の4つを実装しているが、各メソッドの基本的な流れは同じで
+				  todoオブジェクトを作成→todoオブジェクトに変数を設定→todoオブジェクトをtodoRepositoryに渡して、DBに保存⇒todoをリターン
+				  なお、todoRepositoryはDIコンテナからインスタンス取得している。@Injectの動きとなるが、@Autowiredとの違いが不明
+				  エラーメッセージを生成する処理でResultMessageをインスタンス化なしで呼び出しているが、これはstaticメソッドの動きで共有メモリから直接メソッド呼び出し出来るらしい。
+				  UUIDの処理がまさに該当する認識だが、仮にStaticメソッドで変数を格納した場合は、共有領域に保存されるため、他インスタンスからのアクセスが可能。逆にインスタンス化して呼び出すとUUIDは一意なIDを生成出来ない可能性がある？
+				  DateをStaticとして呼び出していないのは、インスタンス化しておかないと、呼び出す度にタイムスタンプが変わるから？Date()をそのまま引数には出来ない？
+				  @Transactionalをつけることでこのクラスで定義したpublicメソッドは全てトランザクション管理の対象となり、メソッド開始時にトランザクションを開始し、メソッド完了時にコミット、例外発生時はロールバックするようになるらしい(すごい)
+				  @Transactional(readOnly=true)とすると、O/RMapperを利用している場合のみ、参照のみのトランザクション制御の最適化をしてくれるらしい
+	アプリケーション層の作成:
+		contorollerの作成:
+			
