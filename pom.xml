@@ -192,6 +192,11 @@
             <artifactId>tomcat-embed-el</artifactId>
             <scope>test</scope>
         </dependency>
+		<dependency>
+    		<groupId>org.apache.commons</groupId>
+    		<artifactId>commons-lang3</artifactId>
+    		<version>3.9</version>
+		</dependency>
         <!--  REMOVE THIS LINE IF YOU USE Spring Test DBUnit
         <dependency>
             <groupId>org.dbunit</groupId>

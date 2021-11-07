@@ -16,6 +16,9 @@ import org.terasoluna.gfw.common.message.ResultMessages;
 import com.example.todo.domain.model.Todo;
 import com.example.todo.domain.repository.todo.TodoRepository;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 @Service
 @Transactional
 
@@ -61,6 +64,7 @@ public class TodoServiceImpl implements TodoService {
 		todo.setTodoId(todoId);
 		todo.setCreatedAt(createAt);
 		todo.setFinished(false);
+		System.out.println("create_todo" + ToStringBuilder.reflectionToString(todo, ToStringStyle.MULTI_LINE_STYLE));
 		
 		todoRepository.create(todo);
 		
