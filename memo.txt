@@ -95,7 +95,7 @@ mvn archetype:generate -B\
 		  →全部チェックつけて確認→同意しますで完了→右したのソフトウェアのインストール中が100%になるまで待ち→今すぐ再起動
 		- 実行をリトライ→tomcatは起動出来たけど404エラー。warをビルドしてからtomcatを再起動することにするも、mavenのビルドエラー
 		- Failed to execute goal org.apache.maven.plugins:maven-war-plugin:3.0.0:war (default-war) on project helloworld: Execution default-war of goal org.apache.maven.plugins:maven-war-plugin:3.0.0:war failed: Unable to load the mojo 'war' in the plugin 'org.apache.maven.plugins:maven-war-plugin:3.0.0' due to an API incompatibility: org.codehaus.plexus.component.repository.exception.ComponentLookupException
-		- warのビルドプラグインがjavaやmavenに対して古すぎるっぽい。pom.xmlを修正(STSが死ぬほど使いにくいのだが。。。)
+		- warのビルドプラグインがjavaやmavenに対して古すぎるっぽい。pom.xmlを修正
 		- 3.3.2にしてみる
 		  https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-war-plugin
 		- 実行からMaven Clead → Maven ビルドでビルドは今後は成功
@@ -173,4 +173,31 @@ mvn archetype:generate -B\
 				  @Transactional(readOnly=true)とすると、O/RMapperを利用している場合のみ、参照のみのトランザクション制御の最適化をしてくれるらしい
 	アプリケーション層の作成:
 		contorollerの作成:
+			- コントローラでクライアントのhttpリクエストを受付、後続のドメイン層に処理を受け渡す
+			- @Controllerでコンポーネントスキャン対象にし、DIコンテナに格納される。これにより、Spring起動時にコントローラがリクエストの受け口となるように、
+			  springがビルドしてくれる。Springを使わない場合はサーブレットの実装が必要？
+		formの作成:
+			- 画面側で入力したformの値を受け取り、todoに格納する役割。もっと具体的に書くと、Controllerがjspから受け取ったformの入力値をもとserviceを呼び出し
+			  取得したデータをformに格納し、さらにformをmodelに追加する。Controllerはmodelをjspに返却し、jspはmodelの内容をもとに画面表示を行う。
+		TodoCotrollerへの一覧画面取得処理の実装:
+			 Controllerの実装:
+				- 一覧画面取得処理は、ドメイン層のtodoServiceのfindAllで実装済み。todoServiceはDIコンテナに登録済みのため、@InjectでSpring起動時に生成したtodoServiceのインスタンスを
+				  TodoControllerに代入する。
+				- @ModelAttributeでformクラスを初期化して、リターンする。チュートリアルでは、TodoForm型のsetUpFormメソッドに@ModelAttributeが付与されていて、
+				  formオブジェクトにTodoFormインスタンスを格納し、formオブジェクトをリターンしている。(この時点でformオブジェクトには画面からのformの入力値が格納されている認識)
+				  これにより、Springの処理でformオブジェクトが、modelオブジェクトに追加された状態となり、リクエストのセッション内で他のメソッドやjspから参照出来る形となる。
+				  なお、Springの仕様で、modelにformオブジェクトが追加される際は、型名の先頭を小文字にしたものがキー名(今回は{todoForm:[todoオブジェクトの中身}のイメージ]で
+				  modelオブジェクトに追加される。
+				  TodoFormはimportしていないが、型エラーにならないことから、@ModelAttributeにおいては任意の型名が指定可能(キー名を定義するためのもの？)と推測
+				- @GetMapping("list")でtodo/listへのリクエストを受け付けた際に、listメソッドを実行するよう定義している。listメソッドの引数である
+				  modelオブジェクトには、@ModelAttributeでformの値を追加したものとなる。今回は全件検索のため、modelオブジェクトの内容は利用していないが、画面の入力値をもとにデータの
+				  更新、削除、作成を行う際はmodelオブジェクトから画面の入力値を取得することができる。
+				  全件検索の結果はmodelに追加する。これにより、jspからmodelの参照出来るため、jsp側で全件表示のhtmlをレンダリングすることが出来る
+				  なお、listメソッドの戻り値が"todo/list"となっているのは、spring-mvc.xmlに定義したViewResolverによって、WEB-INF/views/todo/list.jspをレンダリングするため。
+				  list.jspはこの後実装する。modelの値を画面表示するように実装する想定。
+			viewの作成:
+				- TodoContllerの@GetMappingで定義したlistメソッドの戻り値でレンダリングするようにしたlist.jspを作成する。
+				- <c:forEach items="${todos}" var="todo">で、model内のtodosオブジェクトの内容をループして表示させる。
+				  todosはfindAll()の実行結果が格納されたオブジェクトなので、Repositoryに登録されたtodo一覧をjspで順次レンダリングする処理となっている。
+		TodoCotrollerへのTodo新規作成処理の実装:
 			
